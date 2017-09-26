@@ -2,23 +2,34 @@ import sys, os
 import numpy as np
 
 class data:
-	data_ran = np.random.random((3, 3))
+        A = np.matrix([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
+                        [0, -1, 0, 0, 0, 0, 0.5, 0, 0, 0, 0], \
+                        [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0], \
+                        [0, 1, 0, 0, 0, 0, 0, 0, 0, -0.7071 -0.3536], \
+                        [0, 0, -1, 0, 0, 0, 0, 0, 0, -0.7071 -0.3536]])
 
-	#dt_F0 = np.dtype([('F0', float)])
-	dt_F0 = np.zeros((4, 4))
-	dt_F1 = np.zeros((4, 4))
-	dt_F2 = np.zeros((4, 4))
-	dt_F3 = np.zeros((4, 4))
-	dt_F4 = np.zeros((4, 4))
+        b = np.matrix([[1, 0, 0, 0, 0]])
+        b.shape = (5,1)
 
-	dt_FF = np.zeros((4, 1))
+        c = np.matrix([0, 0, 0, 0, 0, 1, -0.5, 0, 1, 4.2426, -0.7071]);
+        c.shape = (11,1)
 
+        x0 = np.matrix([1, 0, 0, 0, 0, 0.1, 0, 0, 0.1, 0, 0]);
+        x0.shape = (11,1)
 
-	def __init__(self):
-		print('Intializing Data.......')
-		self.dt_F0 = np.matrix([[0.50, 0.55, 0.33, 2.38], [0.55, 0.18, -1.18, -0.40], [0.33, -1.18, -0.94, 1.46], [2.38, -0.40, 1.46, 0.17]])
-		self.dt_F1 = np.matrix([[5.19, 1.54]])
+        s0 = np.matrix([3.7, 1, -3.5, 0, 0, 1, 0.25, 0.5, 1, -0.35355, -0.1767]);
+        s0.shape = (11,1)
 
-	def F0(self):
-		print(self.dt_F0)
+        y0 = np.matrix([[-3.7, -1.5, -0.5, -2.5, -4]]);
+        y0.shape = (5,1)
 
+        n = np.matrix([[5, 3, 3]]);
+
+        sig = 1e-5;
+        epsi = 1e-4;
+
+        def __init__(self):
+                print('Intializing Data.......')
+
+        def F0(self):
+                print('')
