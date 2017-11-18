@@ -20,7 +20,14 @@ from numpy import linalg as LA
 #*************************************************************************
 # This is our class with the data elements that will be used
 #*************************************************************************
-from data_set import data
+from data_set2 import data
+
+#*************************************************************************
+# Print out the paths available to this program during run time. Uncomment
+# if there is a need to debug
+#*************************************************************************
+# print('\n'.join(sys.path))
+
 
 #*************************************************************************
 # Start of the the python class
@@ -155,7 +162,7 @@ class second_order_cp:
 			#	 |0 0 0 0 1|
 			#
 			#************************************************
-			Xi = np.vstack((xi.reshape(xi.shape[1], xi.shape[0]), ab));
+			Xi = np.vstack((np.transpose(xi), ab));
 
 			#************************************************
 			# Now, insert the Xi matrix into the X matrix in
@@ -172,8 +179,6 @@ class second_order_cp:
 			X[(ct):(ct+ni), (ct):(ct+ni)] = Xi;
 
 
-
-
 			#************************************************
 			# Do the sameting that was done for the X matrix
 			# for the S matrix, but using the s matrix 
@@ -187,7 +192,7 @@ class second_order_cp:
 
 			ab = np.hstack((a,b));
 
-			Si = np.vstack((si.reshape(si.shape[1], si.shape[0]), ab));
+			Si = np.vstack((np.transpose(si), ab));
 
 			S[(ct):(ct+ni), (ct):(ct+ni)] = Si;
 
@@ -212,6 +217,7 @@ class second_order_cp:
 	#	a: value of alpha obtained
 	#********************************************************
 	def find_alpha(self, x, dx, n):
+#		print('Executing find_alpha......................')
 
 		#********************************************************
 		# Determine the number of elements in n
@@ -219,9 +225,10 @@ class second_order_cp:
 		q = n.shape[1];
 
 		#********************************************************
-		# Initialize aw a q * 1 column vector
+		# Initialize complex data type aw a q * 1 column vector
 		#********************************************************
-		aw = np.zeros((q,1));
+		#aw = np.zeros((q,1), dtype=complex);
+		aw = np.zeros((q,1), dtype=float);
 
 		act = 0;
 
@@ -277,13 +284,16 @@ class second_order_cp:
 			#********************************************************
 			# Calculate p0
 			#********************************************************
-			p0_1 = np.around(math.pow(d1, 2), decimals=4);
-			p0_2_0 = np.around(LA.norm(dr), decimals=4);
-			p0_2_1 = np.around(math.pow(p0_2_0, 2), decimals=4);
+			p0_1 = math.pow(d1, 2);
+			p0_2_0 = LA.norm(dr);
+			p0_2_1 = math.pow(p0_2_0, 2);
 
-			p0 = np.around((p0_1 - p0_2_1), decimals=4);
+			p0 = (p0_1 - p0_2_1);
+
 			p1 = ((2*(x1*d1 - np.dot(np.transpose(xr), dr)))[0])[0];
+
 			p2 = math.pow(x1, 2) - math.pow((LA.norm(xr)), 2);
+
 
 			#********************************************************
 			# Determine aw1
@@ -292,7 +302,8 @@ class second_order_cp:
 				aw1 = 1;
 			else: 
 				aw1 = 0.99*(x1/((-1)*d1));
-			
+		
+			aw1 = np.absolute(aw1)	
 
 			p_stack	= np.hstack((p0, p1));
 			p_stack	= np.hstack((p_stack, p2));
@@ -301,7 +312,7 @@ class second_order_cp:
 			# Calc roots of the polynomial represented by p 
 			# as a column vector.
 			#*************************************************
-			rt = (np.sort(np.roots(p_stack))).reshape(2,1);
+			rt = np.transpose(np.sort(np.roots(p_stack)));
 
 			#*************************************************
 			# Determine aw2
@@ -313,23 +324,21 @@ class second_order_cp:
 			elif p0 < 0:
 				aw2 = rt[1];
 
+			aw2 = np.absolute(aw2)	
 
 			aw_stack = np.hstack((aw1, aw2));
 
 
-
-			aw[i] = min(aw_stack);
+			#*************************************************
+			# Determine the complex number of smallest magnitude
+			#*************************************************
+			aw[i] = np.min(aw_stack);
 
 			act = act + ni;
 
-		#*************************************************
-		# Return the minimum of the 2 aw's
-		#*************************************************
-		a = np.around(min(aw), decimals=5);
+		a = np.min(aw);
 
 		return a
-
-
 
 
 
@@ -338,7 +347,10 @@ class second_order_cp:
 	# The Second Order Cone Proramming function. This is the main
 	# entry point of the program.
 	#*****************************************************************
+	#def socp(self, A,b,c,x0,s0,y0,n,sig,epsi):
 	def socp(self) :
+#		print('Executing second_order_cp......................')
+
 		#********************************************************
 		# Get q, based on the number of elements in n i.e. 
 		#	n of i = 1, 2, ..., q
@@ -377,14 +389,13 @@ class second_order_cp:
 		#
 		#	minimize the gap?????? see ex 14.5
 		#********************************************************
-		gap = np.around(((np.dot(np.transpose(x), s))[0])[0], decimals=4);
+		gap = ((np.dot(np.transpose(x), s))[0])[0];
 
 		#********************************************************
 		# The mean value of the gap wrt to q the number of 
 		# elements in n
 		#********************************************************
 		mu = gap/q;
-
 
 		#********************************************************
 		# Number of elements in b
@@ -393,6 +404,12 @@ class second_order_cp:
 		nb = (self.data_obj.b).shape[0];
 
 		k = 0;
+
+		# Use for debgging
+		#max_loop = 2130 
+		max_loop = 46
+		loop_count = 0
+
 
 		#********************************************************
 		# While loop that will 
@@ -452,7 +469,10 @@ class second_order_cp:
 			#			= [16:27, 0:22]
 			# Next to each other
 			#*************************************************
-			M[(nb+m):sm, 0:m2] = np.around(np.column_stack((S, X)), decimals=4);
+			M[(nb+m):sm, 0:m2] = np.column_stack((S, X));
+
+			M_inv = np.linalg.inv(M)
+
 
 			#*************************************************
 			# Calcualte bw:
@@ -462,21 +482,22 @@ class second_order_cp:
 			# vector 27 rows 
 			#*************************************************
 			bw_0 = self.data_obj.b-np.dot(self.data_obj.A, x);
+
 			bw_1 = self.data_obj.c - s - np.dot( np.transpose(self.data_obj.A), y )
-			bw_2 = self.data_obj.sig*mu*e-X*s
-			bw_2 = (bw_2.diagonal()).reshape((bw_2).shape[0], 1)
+
+			bw_2 = (self.data_obj.sig*(np.dot(mu,e))) - (np.dot(X,s))
+
+			bw = np.zeros((sm,1));
 
 			bw = np.vstack((bw_0,bw_1));
-			bw = np.around(np.vstack((bw,bw_2)), decimals=4);
+			bw = np.vstack((bw,bw_2));
 
 
 			# **************************************************************************
 			# Calculate the delta using the matrix M which will contain all deltas
-			#
-			# This is giving me a lot of different figures that causes the rest of the 
-			# calculations to be thrown off
-			delt = np.around(np.dot(inv(M), bw), decimals=4);
 			# **************************************************************************
+			delt = np.dot(M_inv, bw);
+
 
 			#*************************************************
 			# Delta x
@@ -493,7 +514,6 @@ class second_order_cp:
 			#*************************************************
 			dy = delt[m2:sm];
 
-
 			#*************************************************
 			# Calculate the alphas using the find_alpha method
 			#
@@ -503,9 +523,9 @@ class second_order_cp:
 
 			a2 = self.find_alpha(s, ds, self.data_obj.n);
 
-			t = np.around(self.data_obj.c - np.dot(np.transpose(self.data_obj.A),y), decimals=4);
+			t = self.data_obj.c - np.dot(np.transpose(self.data_obj.A), y);
 
-			dt = np.around(np.dot(np.transpose(-1*self.data_obj.A), dy), decimals=4);
+			dt = np.dot(np.transpose(-1*self.data_obj.A), dy);
 
 			a3 = self.find_alpha(t, dt, self.data_obj.n);
 
@@ -524,22 +544,35 @@ class second_order_cp:
 			# Caluculate the new x, s, and y:
 			#	vector x + (scalar a * dx)
 			#*************************************************
-			x = np.around(x + (a*dx), decimals=4);
+			x = (x + (a*dx));
 
-			s = np.around(s + (a*ds), decimals=4);
+			s = (s + (a*ds));
 
-			y = np.around(y + (a*dy), decimals=4);
+			y = (y + (a*dy));
 
 			#*************************************************
 			# Determine the primal-dual gap	
 			#*************************************************
-			gap = np.around(((np.dot(np.transpose(x), s))[0])[0], decimals=4);
+			gap = ((np.dot(np.transpose(x), s))[0])[0];
 
 			#*************************************************
 			# Caluculate the mean value of the gap with respect
 			# to q
 			#*************************************************
-			mu = np.around(gap/q, decimals=4);
+			mu = gap/q;
+
+			#*************************************************
+			#*************************************************
+			# Use the following for debugging
+			#*************************************************
+			loop_count = loop_count+1
+
+			if loop_count > max_loop:
+				print("loop_count: ", loop_count)
+				fs = ((np.dot(np.transpose(self.data_obj.c), x))[0])[0];
+				print("fs: ", fs)
+				sys.exit()
+			#*************************************************
 
 			k = k + 1;
 
@@ -550,3 +583,4 @@ class second_order_cp:
 		fs = ((np.dot(np.transpose(self.data_obj.c), x))[0])[0];
 		print("fs: ", fs)
 
+		print("y: ", y, "   shape: ", y.shape)
